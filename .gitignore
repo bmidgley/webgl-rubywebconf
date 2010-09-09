@@ -1,0 +1,9 @@
+log/*
+tmp/*
+*.pid
+config/database.yml
+config/facebooker.yml
+assets/structure.rdf.u8
+db/*.sqlite3
+db/schema.rb
+.DS_Store

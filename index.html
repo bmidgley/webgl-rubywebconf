@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+        <!-- Slide meta data, remove/edit as you see fit -->
+        <title>WebGL</title>
+        <meta name="generator" content="Organic" />
+        <meta name="author" content="Jordi Boggiano" />
+        <meta name="company" content="Liip AG" />
+        <meta name="email" content="j.boggiano@seld.be" />
+        <meta name="presdate" content="2010-05-30" />
+        <!-- Slippy core file and dependencies -->
+        <script type="text/javascript" src="js/jquery-1.4.2.min.js"></script>
+        <script type="text/javascript" src="js/jquery.history.js"></script>
+        <script type="text/javascript" src="js/slippy-0.9.0.js"></script>
+        <!-- Slippy structural styles -->
+        <link type="text/css" rel="stylesheet" href="css/slippy-0.9.0.css"/>
+        <!-- Slippy theme -->
+        <link type="text/css" rel="stylesheet" href="css/slippy-dark.css"/>
+        <!-- Syntax highlighting core file  -->
+        <script type="text/javascript" src="highlighter/shCore.js"></script>
+        <!-- Syntax highlighting brushes, remove those you don't need -->
+        <script type="text/javascript" src="highlighter/shBrushBash.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushCpp.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushCSharp.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushCss.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushDelphi.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushDiff.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushGroovy.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushJava.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushJScript.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushPhp.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushPlain.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushPython.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushRuby.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushScala.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushSql.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushVb.js"></script>
+        <script type="text/javascript" src="highlighter/shBrushXml.js"></script>
+        <!-- Syntax highlighting styles-->
+        <link type="text/css" rel="stylesheet" href="highlighter/shCore.css"/>
+        <link type="text/css" rel="stylesheet" href="highlighter/shThemeEclipse.css"/>
+        <!-- Slippy init code -->
+        <script type="text/javascript">
+            $(function() {
+                $(".slide").slippy({
+                    // settings go here
+                    // possible values are:
+                    //  - animLen, duration for default animations (0 = disabled)
+                    //  - animInForward, receives a slide and animates it
+                    //  - animInRewind, receives a slide and animates it
+                    //  - animOutForward, receives a slide and animates it
+                    //  - animOutRewind, receives a slide and animates it
+                    //  - baseWidth, defines the base for img resizing, if you don't want only
+                    //    full-width images, specify this as the pixel width of a slide so that
+                    //    images are scaled properly (default is 620px wide)
+                    //  - ratio, defines the width/height ratio of the slides, defaults to 1.3 (620x476)
+                });
+                SyntaxHighlighter.all();
+            });
+        </script>
+        <!-- Custom style for this deck -->
+        <style type="text/css">
+            .slide.nochrome {
+                border: 0;
+                background: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="slide">
+            <h1>Coming soon... 3D without plugins</h1>
+            <h3>WebGL. OK, what is it...</h3>
+            <ul>
+                <li>Hardware-assisted 3D rendering in browser</li>
+                <li>Standards-based, multi-vendor support, no plugin required</li>
+                <li>Appearing in browsers big and small</li>
+                <li>based on OpenGL-es 2.0</li>
+                <li>plugin adoption still a problem</li>
+                <li>plugin/browser barrier a pain</li>
+                <li>leave implementation up to the browser folks, things are better</li>
+            </ul>
+        </div>
+        
+        <div class="slide">
+          <h1>Alternatives?</h1>
+            <ul>
+                <li>  Flash/Papervision3D
+                <li>  Silverlight/Balder
+                <li>  Java Applet/OpenGL/JOGL
+                <li> Flash10
+                <li>  Unity3D plugin
+                <li>  Torque3D plugin
+                <li>  Google NaCl
+                <li>  Google O3D -- WebGL prototype
+                <li>  VRML -- 3D as markup, Windows-only plugin
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Didn't it take years to get html5?</h1>
+            <ul>
+              <li> It's a multivendor standard, implemented in open and closed browsers
+              <li> This one is not going to disappear or falter like VRML
+              <li> Nightly browser builds have it, supported as long as you have OpenGL
+              <li> iOS has the best adoption rate in the industry
+              <li> millions of handhelds will be WebGL-ready overnight
+              <li> android mobiles will follow, slowly
+              <li> don't hold your breath for windows mobile
+              <li> make a reasonable fallback for non-WebGL browsers and you will rock
+              <li>  choose html5 or flash based on your audience
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Microsoft resistance?</h1>
+            <ul>
+              <li> Web standards and OpenGL... two thing MS already hated
+              <li> WebGL opens up another web standards battle
+              <li> Windows machines vs. OpenGL API
+              <li> Google Angle (Almost Native Graphics Layer Engine)
+              <li> Browsers do WebGL through Angle+Direct3D
+              <li> IE will never support WebGL
+              <li> WebGL working group Apple, Google, Mozilla, Opera (not MS)</li>
+              <p><img width="200" src="images/earth.jpg"/>
+            </ul>
+        </div>
+        <div class="slide">
+            <h1>Processing.js as a WebGL framework</h1>
+            <ul>
+                <li>Quickest results</li>
+                <li>Java-based syntax, several books document it</li>
+                <li>Some Processing extensions are not yet in PJS, eg Network</li>
+                <li>No fine-grained control over WebGL constructs, less flexible</li>
+                <li>A quick <a href="test1b.html" target=_blank>demo</a></li>
+              <p><img width="300" src="images/pong.png"/>
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Features, recommendations</h1>
+            <ul>
+              <li> Take advantage of interactive and 3D rendering
+              <li>  Use the mouse and keyboard
+              <li>  Move or alternate the camera
+              <li>  Move light sources
+              <li>  Use curved surfaces to see light effects
+              <li>  Plan for effects like shadows to provide visual cues
+              <li>  Use realistic approximations for gravity and other physics
+              <li> Be aware of principles of vision
+              <li>  A quick <a href="test2.html" target=_blank>Pong reloaded</a></li>
+              <p><img width="300" src="images/reloaded.jpg"/>
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Is the restaurant on the ridge?</h1>
+          <img src="images/ridge.png">
+        </div>
+        <div class="slide">
+          <h1>...or in the valley?</h1>
+          <img src="images/valley.png">
+        </div>
+        <div class="slide">
+          <h1>Matrix stack</h1>
+            <ul>
+              <li> Many frameworks borrow this idea from OpenGL
+              <li> Easily added to WebGL using the programmable pipeline
+              <li> Matrix is 4x4 to provide both rotation and translation
+              <li> Don't worry about matrix math, just ask for your transforms
+              <li> If you don't need to preserve the stack, just reset the xform matrix</li>
+              <p><img width=200 src="images/robot.png">
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>consider a robot</h1>
+                <ul>
+<li>  push a matrix # whole robot
+<li>     apply translation (to position the whole robot), modifies the top matrix
+<li>     place robot body
+<li>    push a matrix # left arm
+<li>     apply translation (to left side)
+<li>     apply rotate for the left arm
+<li>     place the left arm
+<li>     ... place fingers
+<li>    pop matrix # left arm
+<li>    push a matrix # right arm
+<li>     apply translation (to right side)
+<li>     apply rotate for the right arm
+<li>     place the right arm
+<li>     ... place fingers
+<li>    pop matrix # right arm
+<li>    pop matrix # whole robot
+  <li> <a href="test4.html" target=_blank>Swing</a>, robot</li>
+              <p><img width=100 src="images/robot.png">
+  </ul>
+        </div>
+        <div class="slide">
+          <h1>I wanted eye-popping 3d</h1>
+            <ul>
+              <li> Active/Passive stereo
+              <li> OpenGL supports active stereo, a quad-buffering mode
+              <li> No surprise, WebGL leaves this out
+              <li> Anaglyphs in WebGL? Maybe.
+              <li> You can make people use the red/blue glasses
+              <li> Welcome to the world of the future
+              <li> But processingjs can't do it
+              <li> Active stereo... Java applets (eg Processing/J)
+              <li> Adjust stereo 3d depth so at the edges it meets (or falls behind) the window border
+              <li> <a href="http://cs.helsinki.fi/u/ilmarihe/jscene/demos/stereo.html" target=_blank>cue headache</a></li>
+                <p><img width="300" src="images/glasses.jpg"/>
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Think multiple platforms</h1>
+            <ul>
+              <li> Why write your 3D in java/android, objc/iOS, flash/web
+              <li> Write it once in WebGL
+              <li> Native apps can embed a webview
+              <li> An even more Mobile-friendly web
+              <li> Rethink mouse clicking/interacting
+              <li> This very tricky part can be written just once
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>You blinked!</h1>
+            <ul>
+              <li> Use flash to access web cam
+              <li> demos are out there that add you to the scene
+              <li>Unfortunately, none of them work at the moment
+              <li>HTML5 webcam API will nail this</li>
+              <li>Add to an object like <a href="https://cvs.khronos.org/svn/repos/registry/trunk/public/webgl/sdk/demos/google/shiny-teapot/index.html" target=_blank>Utah teapot</a></li>
+                <p><img width="300" src="images/teapot.png"/>
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Websocket connection</h1>
+            <pre>
+  websock = new WebSocket("ws://localhost:8080");
+  websock.onopen = function(evt) {
+    console.log("opened websocket")
+    websock.send("Hello Web Socket!");
+  };
+  websock.onmessage = function(evt) {
+    console.log("received message " + evt.data);
+  };
+  websock.onclose = function(evt) {
+    console.log("I really should try to connect again");
+  };
+            </pre>
+        </div>
+        <div class="slide">
+          <h1>Eventmachine</h1>
+            <pre>
+ require 'em-websocket'
+ 
+ EventMachine::WebSocket.start(:host => "0.0.0.0", :port => 8080) do |ws|
+  ws.onopen    { ws.send "Hello Client!"}
+  ws.onmessage { |msg| ws.send "Pong: #{msg}" }
+  ws.onclose   { puts "WebSocket closed" }
+ end
+            </pre>
+            <p><p><p><a href="test3.html" target=_blank>run...</a>
+        </div>
+        <div class="slide">
+          <h1>ProcessingJS prototyping</h1>
+            <ul>
+              <li> mix JS with Processing
+              <li> Not optimized
+              <li> Lots of WebGL features are inaccessible
+              <li> Implement in a full js framework later
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Grown-up WebGL</h1>
+            <ul>
+              <li> X3DOM
+              <li> GLGE
+              <li> WebGLU
+              <li> SpiderGL
+              <li> C3DL
+              <li> CopperLicht
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Shaders</h1>
+            <ul>
+              <li> WebGL uses a C-like language for shaders
+              <li> Vertex shader takes coordinates, typically transforms by top matrix
+              <li> Fragment shader deals with color for fragments
+                <p><img src="images/pipeline.gif"/>
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>SpiderGL examples</h1>
+            <ul>
+          <li><a href="spider2.html" target=_blank>Simple example</a>
+          <li><a href="spider.html" target=_blank>Shadow demo</a>
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Summary</h1>
+            <ul>
+              <li> WebGL will be the best way to do 3D on the web (eventually)
+              <li> Quick prototypes in ProcessingJS
+              <li> Watch for iOS to be the fastest adopter
+              <li> Next audience in high adopters will be developers, techies
+              <li> Have a backup plan for desktops and slow adopters
+              <li> Unity, Torque frameworks will probably target WebGL
+              <li> Frameworks like CopperLicht will likely work toward other platforms
+              <li> Consider WebGL as its own multiplatform framework
+            </ul>
+        </div>
+        <div class="slide">
+          <h1>Questions</h1>
+            <ul>
+            </ul>
+        </div>
+    </body>
+</html>

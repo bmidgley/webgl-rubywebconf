@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+  <meta HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+  <meta HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+
+  <title>SpiderGL - Shadow Mapping</title>
+</head>
+ <body id="index">
+  <div class="container">
+
+   <div id="header" class="span-24 last">
+
+    <div id="title" class="prepend-1 span-10" >
+    </div>
+   </div>
+
+   <div class="span-24 last">
+    <script type="text/javascript" src="js/spidergl.js"></script>
+
+<script id="SHADOW_PASS_VERTEX_SHADER" type="x-shader/x-vertex">
+#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform   mat4 u_mvp;
+attribute vec4 a_position;
+void main(void)
+{
+	gl_Position = u_mvp * a_position;
+}
+</script>
+
+<script id="SHADOW_PASS_FRAGMENT_SHADER" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision highp float;
+#endif
+
+vec4 pack_depth(const in float depth)
+{
+	const vec4 bit_shift = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);
+	const vec4 bit_mask  = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);
+	vec4 res = fract(depth * bit_shift);
+	res -= res.xxyz * bit_mask;
+	return res;
+}
+
+void main(void)
+{
+	gl_FragData[0] = pack_depth(gl_FragCoord.z);
+}
+</script>
+
+<script id="LIGHT_PASS_VERTEX_SHADER" type="x-shader/x-vertex">
+#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform   mat4 u_mvp;
+uniform   mat4 u_shadowMatrix;
+uniform   mat3 u_worldNormalMatrix;
+attribute vec4 a_position;
+attribute vec3 a_normal;
+varying   vec3 v_normal;
+varying   vec4 v_shadowCoord;
+void main(void)
+{
+	v_shadowCoord = u_shadowMatrix * a_position;
+	v_normal      = u_worldNormalMatrix * a_normal;
+	gl_Position   = u_mvp * a_position;
+}
+</script>
+
+<script id="LIGHT_PASS_FRAGMENT_SHADER" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform sampler2D u_shadowMap;
+uniform vec3 u_worldLightDir;
+uniform vec3 u_albedo;
+varying vec3 v_normal;
+varying vec4 v_shadowCoord;
+
+float unpack_depth(const in vec4 rgba_depth)
+{
+	const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+	float depth = dot(rgba_depth, bit_shift);
+	return depth;
+}
+
+void main(void)
+{
+	vec3 shadow_coord = v_shadowCoord.xyz / v_shadowCoord.w;
+	vec4 rgba_depth   = texture2D(u_shadowMap, shadow_coord.xy);
+	float depth       = unpack_depth(rgba_depth);
+	float visibility  = ((depth - shadow_coord.z) > -0.01) ? (1.0) : (0.5);
+
+	vec3 normal    = normalize(v_normal);
+	float lambert  = dot(normal, -u_worldLightDir);
+	lambert        = max(lambert, 0.0);
+	float diffuse  = lambert * visibility;
+	diffuse        = max(diffuse, 0.1);
+
+	vec3 color     = vec3(diffuse * u_albedo);
+	gl_FragData[0] = vec4(color, 1.0);
+}
+</script>
+
+<script type="text/javascript">
+function log(msg)
+{
+	document.getElementById("LOG").innerHTML += (msg + "\n");
+}
+
+function SpiderGLShadowMapping()
+{
+	;
+}
+
+SpiderGLShadowMapping.prototype =
+{
+	generateGridMesh : function(gl, nx, nz)
+	{
+		var nv = ((nx+1) + (nz+1)) * 2;
+		var positions = new Array(nv * 3);
+		var normals   = new Array(nv * 3);
+		var f = 0.0;
+		var k = 0;
+
+		// Z-..Z+ lines
+		for (var x=0; x<(nx+1); ++x)
+		{
+			f = -0.5 + x/nx;
+			positions[k++] = f;
+			positions[k++] = 0.0;
+			positions[k++] = -0.5;
+			positions[k++] = f;
+			positions[k++] = 0.0;
+			positions[k++] = 0.5;
+		}
+
+		// X-..X+ lines
+		for (var z=0; z<(nz+1); ++z)
+		{
+			f = -0.5 + z/nz;
+			positions[k++] = -0.5;
+			positions[k++] = 0.0;
+			positions[k++] = f;
+			positions[k++] = 0.5;
+			positions[k++] = 0.0;
+			positions[k++] = f;
+		}
+
+		for (var i=0; i<(nv*3); i+=3)
+		{
+			normals[i+0] = 0.0;
+			normals[i+1] = 1.0;
+			normals[i+2] = 0.0;
+		}
+
+		var mesh = new SglMeshGL(gl);
+		mesh.addVertexAttribute("position", 3, new Float32Array(positions));
+		mesh.addVertexAttribute("normal",   3, new Float32Array(normals));
+		mesh.addArrayPrimitives("triangles", gl.LINES, 0, nv);
+		mesh.color = [0.7, 0.7, 0.7];
+
+		return mesh;
+	},
+
+	load : function(gl)
+	{
+		log("SpiderGL Version : " + SGL_VERSION_STRING + "\n");
+
+		/*************************************************************/
+		this.xform = new SglTransformStack();
+		this.angle = 0.0;
+		/*************************************************************/
+
+
+		/*************************************************************/
+		var shadowVsrc = sglNodeText("SHADOW_PASS_VERTEX_SHADER");
+		var shadowFsrc = sglNodeText("SHADOW_PASS_FRAGMENT_SHADER");
+		var shadowProg = new SglProgram(gl, [shadowVsrc], [shadowFsrc]);
+		log(shadowProg.log);
+		this.shadowProg = shadowProg;
+		/*************************************************************/
+
+
+		/*************************************************************/
+		var lightVsrc = sglNodeText("LIGHT_PASS_VERTEX_SHADER");
+		var lightFsrc = sglNodeText("LIGHT_PASS_FRAGMENT_SHADER");
+		var lightProg = new SglProgram(gl, [lightVsrc], [lightFsrc]);
+		log(lightProg.log);
+		this.lightProg = lightProg;
+		/*************************************************************/
+
+
+		/*************************************************************/
+		this.model = null;
+
+		var that = this;
+		var objLoadCB = function(req) {
+			var update = true;
+			if (that.model) {
+				update = (that.model.lod < req.lod);
+			}
+			if (!update) return;
+
+			//var mesh    = sglMeshJSImportOBJ(req.text);
+			var mesh = new SglMeshJS();
+			mesh.parseOBJ(req.text);
+
+			var model   = mesh.toPackedMeshGL(gl, "triangles", 64000);
+			model.color = [ 0.8, 0.8, 0.8 ];
+			model.lod   = req.lod;
+			that.model  = model;
+		};
+		var loReq = new SglTextFileRequest("objects/gargoyle1k.obj", objLoadCB);
+		loReq.lod = 1;
+		//loReq.send();
+
+		var hiReq = new SglTextFileRequest("objects/gargoyle50k.obj", objLoadCB);
+		hiReq.lod = 2;
+		//hiReq.send();
+
+		var reqQ = new SglRequestQueue();
+		reqQ.push(loReq);
+		reqQ.push(hiReq);
+		/*************************************************************/
+
+
+		/*************************************************************/
+		var planePositions = new Float32Array([
+			-1.0, 0.0, -1.0,
+			-1.0, 0.0,  1.0,
+			 1.0, 0.0, -1.0,
+			 1.0, 0.0,  1.0
+		]);
+
+		var planeNormals = new Float32Array([
+			0.0, 1.0, 0.0,
+			0.0, 1.0, 0.0,
+			0.0, 1.0, 0.0,
+			0.0, 1.0, 0.0
+		]);
+
+		var plane = new SglMeshGL(gl);
+		plane.addVertexAttribute("position", 3, planePositions);
+		plane.addVertexAttribute("normal",   3, planeNormals);
+		plane.addArrayPrimitives("triangles", gl.TRIANGLE_STRIP, 0, 4);
+		plane.color = [ 0.8, 0.8, 0.8 ];
+		this.plane = plane;
+		/*************************************************************/
+
+
+		/*************************************************************/
+		this.grid  = this.generateGridMesh(gl, 16, 16);
+		/*************************************************************/
+
+
+		/*************************************************************/
+		var fbOpt = { depthAsRenderbuffer : true };
+		var fb = new SglFramebuffer(gl, 2048, 2048, [ gl.RGBA ], gl.DEPTH_COMPONENT16, null, fbOpt);
+		log("Framebuffer Valid : " + fb.isValid);
+		this.fb = fb;
+		/*************************************************************/
+
+
+		/*************************************************************/
+		this.meshes = [ this.model, this.plane, this.grid ];
+		this.worldLightDir = sglNormalizedV3([ -1.0, -1.0, -1.0 ]);
+		this.shadowMatrix  = sglIdentityM4();
+
+		var eye = sglNormalizedV3([5.0, 4.0, 5.0]);
+		eye = sglMulSV3(4.0, eye);		
+		this.viewMatrix = sglLookAtM4C(eye[0], eye[1], eye[2], 0.0, 1.0, 0.0, 0.0, 1.0, 0.0);
+
+		this.trackball = new SglTrackball();
+		/*************************************************************/
+	},
+
+	keyDown : function(gl, keyCode, keyString) {
+		if (keyString == "R") {
+			this.trackball.reset();
+		}
+	},
+
+	mouseMove : function(gl, x, y)
+	{
+		var ui = this.ui;
+
+		var ax1 = (x / (ui.width  - 1)) * 2.0 - 1.0;
+		var ay1 = (y / (ui.height - 1)) * 2.0 - 1.0;
+
+		var action = SGL_TRACKBALL_NO_ACTION;
+		if ((ui.mouseButtonsDown[0] && ui.keysDown[17]) || ui.mouseButtonsDown[1]) {
+			action = SGL_TRACKBALL_PAN;
+		}
+		else if (ui.mouseButtonsDown[0]) {
+			action = SGL_TRACKBALL_ROTATE;
+		}
+
+		this.trackball.action = action;
+		this.trackball.track(this.viewMatrix, ax1, ay1, 0.0);
+		this.trackball.action = SGL_TRACKBALL_NO_ACTION;
+	},
+
+	mouseWheel: function(gl, wheelDelta, x, y)
+	{
+		var action = (this.ui.keysDown[16]) ? (SGL_TRACKBALL_DOLLY) : (SGL_TRACKBALL_SCALE);
+		var factor = (action == SGL_TRACKBALL_DOLLY) ? (wheelDelta * 0.3) : ((wheelDelta < 0.0) ? (1.10) : (0.90));
+
+		this.trackball.action = action;
+		this.trackball.track(this.viewMatrix, 0.0, 0.0, factor);
+		this.trackball.action = SGL_TRACKBALL_NO_ACTION;
+	},
+
+	update : function(gl, dt)
+	{
+		this.angle += sglDegToRad(15.0) * dt;
+		var r = 1.0;
+		var s = sglSin(this.angle);
+		var c = sglCos(this.angle);
+		this.worldLightDir = sglNormalizedV3([r*c, -1.0, r*s]);
+	},
+
+	drawMeshShadowPass : function(gl, m, t) {
+		if (!m) return;
+
+		var uniforms = {
+			u_mvp : t.xform.modelViewProjectionMatrix,
+		};
+
+		sglRenderMeshGLPrimitives(m, "triangles", t.shadowProg, null, uniforms);
+	},
+
+	drawMeshLightPass : function(gl, m, t) {
+		if (!m) return;
+
+		var shadowMat = sglMulM4(t.shadowMatrix, t.xform.modelMatrix);
+
+		var uniforms = {
+			u_mvp                : t.xform.modelViewProjectionMatrix,
+			u_worldNormalMatrix  : t.xform.worldSpaceNormalMatrix,
+			u_worldLightDir      : t.worldLightDir,
+			u_shadowMatrix       : shadowMat,
+			u_albedo             : m.color
+		};
+
+		var samplers = {
+			u_shadowMap : t.fb.colorTargets[0]
+		};
+
+		sglRenderMeshGLPrimitives(m, "triangles", t.lightProg, null, uniforms, samplers);
+	},
+
+	drawPlane : function(gl, func, t) {
+		this.xform.model.push();
+			this.xform.model.scale(6.0, 6.0, 6.0);
+			this.xform.model.push();
+				gl.enable(gl.POLYGON_OFFSET_FILL);
+				gl.polygonOffset(2.0, 2.0);
+				func(gl, this.plane, t);
+				gl.disable(gl.POLYGON_OFFSET_FILL);
+			this.xform.model.pop();
+			this.xform.model.push();
+				this.xform.model.scale(2.0, 2.0, 2.0);
+				gl.lineWidth(3.0);
+				func(gl, this.grid, t);
+				gl.lineWidth(1.0);
+			this.xform.model.pop();
+		this.xform.model.pop();
+	},
+
+	drawModel : function(gl, func, t) {
+		this.xform.model.push();
+			this.xform.model.multiply(this.trackball.matrix);
+			this.xform.model.scale(2.3, 2.3, 2.3);
+			func(gl, this.model, t);
+		this.xform.model.pop();
+	},
+
+	drawScene : function(gl, func, t) {
+		this.drawPlane(gl, func, t);
+		this.drawModel(gl, func, t);
+	},
+
+	drawSceneShadowPass : function(gl) {
+		this.drawPlane(gl, this.drawMeshShadowPass, this);
+		this.drawModel(gl, this.drawMeshShadowPass, this);
+	},
+
+	drawSceneLightPass : function(gl) {
+		this.drawPlane(gl, this.drawMeshLightPass, this);
+		this.drawModel(gl, this.drawMeshLightPass, this);
+	},
+
+	shadowPass : function(gl) {
+		this.fb.bind();
+
+		gl.clearColor(1.0, 1.0, 1.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+
+		this.xform.projection.push();
+		this.xform.projection.loadIdentity();
+		this.xform.projection.ortho(-12.0, 12.0, -12.0, 12.0, -12.0, 12.0);
+
+		this.xform.view.push();
+		this.xform.view.loadIdentity();
+		this.xform.view.lookAt(0.0, 0.0, 0.0, this.worldLightDir[0], this.worldLightDir[1], this.worldLightDir[2], 0.0, 1.0, 0.0);
+
+		this.xform.model.push();
+		this.xform.model.loadIdentity();
+
+		this.shadowMatrix = sglMulM4(sglTranslationM4C(0.5, 0.5, 0.5), sglScalingM4C(0.5, 0.5, 0.5));
+		this.shadowMatrix = sglMulM4(this.shadowMatrix, this.xform.modelViewProjectionMatrix);
+
+		gl.enable(gl.DEPTH_TEST);
+		gl.enable(gl.CULL_FACE);
+
+		this.drawSceneShadowPass(gl);
+
+		gl.disable(gl.DEPTH_TEST);
+		gl.disable(gl.CULL_FACE);
+
+		this.xform.model.pop();
+		this.xform.view.pop();
+		this.xform.projection.pop();
+
+		this.fb.unbind();
+	},
+
+	lightPass : function(gl) {
+		var w = this.ui.width;
+		var h = this.ui.height;
+
+		gl.clearColor(0.8, 0.8, 1.0, 1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+
+		gl.viewport(0, 0, w, h);
+
+		this.xform.projection.push();
+		this.xform.projection.loadIdentity();
+		this.xform.projection.perspective(sglDegToRad(45.0), w/h, 0.1, 100.0);
+
+		this.xform.view.push();
+		this.xform.view.load(this.viewMatrix);
+
+		this.xform.model.push();
+		this.xform.model.loadIdentity();
+
+		gl.enable(gl.DEPTH_TEST);
+		gl.enable(gl.CULL_FACE);
+
+		this.drawSceneLightPass(gl);
+
+		gl.disable(gl.DEPTH_TEST);
+		gl.disable(gl.CULL_FACE);	
+
+		this.xform.model.pop();
+		this.xform.view.pop();
+		this.xform.projection.pop();
+	},
+
+	draw : function(gl)
+	{
+		this.shadowPass(gl);
+		this.lightPass(gl);
+	}
+};
+
+sglRegisterCanvas("SGL_CANVAS1", new SpiderGLShadowMapping(), 60.0);
+</script>
+
+
+<div class="span-22 prepend-1 last">
+ <canvas id="SGL_CANVAS1" width="800" height="420"></canvas>
+ <p></p>
+
+</div>
+
+<div class="span-12 prepend-1">
+</div>
+
+<div class="span-8 prepend-1 last">
+
+ <h4>Controls</h4>
+ <p>
+ LeftMouseButton + MouseMove : Rotate<br/>
+ MiddleMouseButton or (Shift + LeftMouseButton) + MouseMove : Pan<br/>
+ MouseWheel : Scale<br/>
+ Shift + MouseWheel : Dolly<br/>
+
+ Shift+R : Reset Trackball<br/>
+ </p>
+</div>
+<div class="span-22 prepend-1 last">
+ <h4>Log</h4>
+ <textarea id="LOG" style="width:800px; height:200px;"></textarea>
+</div>
+   </div>
+   <div id="footer" class="span-23 prepend-1 last">
+
+     <p>A <a href="http://vcg.isti.cnr.it">Visual Computing Laboratory - ISTI - CNR</a> initiative</p>
+     <p><a href="http://sourceforge.net/projects/spidergl"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=293949&amp;type=10" width="80" height="15" alt="Get SpiderGL at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a></p>
+   </div>
+  </div>
+ </body>
+</html>
+

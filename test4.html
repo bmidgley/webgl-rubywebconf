@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <script type="text/javascript" src="js/processing.js"></script>
+    <script type="text/javascript" src="js/init.js"></script>
+    <title>robots!</title>
+  </head>
+  <body>
+    <script type="application/processing">
+
+void setup() {
+  size(window.innerWidth * .95, window.innerHeight * .95, OPENGL);
+}
+
+void draw() {
+  background(0);
+  lights();
+  noStroke();
+
+  if(mousePressed) {
+    camera(width/2,height/2,500,width/2,height/2,-200, 0, 1, 0);
+  } else {
+    camera(mouseX,mouseY,500,width/2,height/2,-200, 0, 1, 0);
+  }
+
+  pointLight(255,255,255,width-mouseX,height-mouseY,200);
+
+  fill(0,88,192);
+  pushMatrix();
+  translate(width/2,height/4,100);
+  rotateX(-PI/4);
+  scale(.5,.5,1.5);
+  robot();
+  popMatrix();
+
+  fill(255,88,0);
+  pushMatrix();
+  translate(width/3,height/2,0);
+  scale(2,1,1);
+  robot();
+  popMatrix();
+}
+
+void robot() {
+  sphere(30);
+  translate(0,50,0);
+  box(20,140,20);
+
+  pushMatrix();
+  translate(-20,10,0);
+  rotateX(PI*mouseX/width);
+  limb();
+  popMatrix();
+
+  pushMatrix();
+  translate(20,10,0);
+  rotateZ(-PI*mouseX/width);
+  limb();
+  popMatrix();
+
+  pushMatrix();
+  translate(0,55,0);
+  rotateX(PI*mouseY/height-PI/2);
+  translate(-15,20,0);
+  limb();
+  popMatrix();
+
+  pushMatrix();
+  translate(0,55,0);
+  rotateX(-PI*mouseY/height+PI/2);
+  translate(15,20,0);
+  limb();
+  popMatrix();
+}
+
+void limb() {
+  box(10,45,5);
+  translate(0,40,0);
+  sphere(10);
+}
+
+    </script><canvas>
+      You'll need a browser that supports HTML5 to see this content.
+    </canvas><br/>Move mouse to manipulate scene. Hold mouse down for fixed camera angle.
+  </body>
+</html>
+
