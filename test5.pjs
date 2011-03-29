@@ -1,0 +1,162 @@
+int bx, by, bz, br;
+float dx, dy, dz, dr;
+int paddledepth = 160, paddlesize = 100, walldepth = -1000, cameradepth = 200, score;
+int speed = 20, counter;
+
+void setup() {
+  size(window.innerWidth * .95, window.innerHeight * .95, OPENGL);
+  newgame();
+}
+
+void newgame() {
+  bx = .4*width;
+  by = .4*height;
+  bz = walldepth;
+
+  dx = 0;
+  dy = 0;
+  dz = speed;
+  dr = speed * 0.005;
+
+  score = 0;
+}
+
+void draw() {
+  background(0);
+  lights();
+  counter += 1;
+
+  // gravity
+  dy += speed * 0.01;
+  br += dr;
+
+  bx += dx;
+  by += dy;
+  bz += dz;
+
+  boolean paddling = bx > mouseX - paddlesize/2 && bx < mouseX + paddlesize/2 && by > mouseY - paddlesize/2 && by < mouseY + paddlesize/2;
+  // collisions
+  if(bz >= paddledepth && mousePressed) {
+    // cheating: never miss, random deflection
+    dx = random(speed/10)-speed/20;
+    dy = random(speed/3);
+    dz = -speed;
+    dr = -dr;
+  } else if(bz >= paddledepth && bz < paddledepth + 20 && paddling) {
+    // my paddle
+    dz = -dz;
+    dx = (speed/4)*(bx - mouseX)/paddlesize;
+    dy = (speed)*(by - mouseY)/paddlesize;
+    dr = -dr;
+    score++;
+  } else if(bz < walldepth) {
+    // opponent
+    dz = -dz;
+    dr = -dr;
+  } else if(by > height) {
+    // floor
+    dy = -dy;
+    by -= 1;
+    dr = -dr;
+  }
+
+  if(bz >= 1000) {
+    newgame();
+  }
+
+  //if(bz > paddledepth) {
+    // losing
+  //  scenes(mouseX,mouseY,500, bx, by, bz);
+  //} else 
+  //if(mousePressed) {
+    // cheating
+    //scenes(width,height, walldepth/2, bx, by, bz);
+  //} else {
+    // normal play
+    scenes(mouseX,mouseY,500, width/2, height/2, -200);
+  //}
+}
+
+void scenes(int x, int y, int z, int tx, int ty, int tz) {
+  int delta = 5;
+  smooth();
+  strokeWeight(1);
+  noFill();
+  camera(x-delta, y, z, tx, ty, tz, 0, 1, 0);
+  stroke(200,0,0);
+  //fill(200,0,0,20);
+  scene();
+  //fill(0,127,103,20);
+  camera(x+delta, y, z, tx, ty, tz, 0, 1, 0);
+  stroke(0,127,103);
+  scene();
+}
+
+void scene() {
+
+  // sphere has a light source
+  pointLight(255,255,255,bx,by,bz);
+
+  // bouncing sphere
+  sphereDetail(8);
+  pushMatrix();
+  translate(bx,by,bz);
+  if(by > height*9/10 && bz < paddledepth) {
+    scale(1, 5.5-5*by/height, 1);
+  }
+  rotateX(br);
+  rotateY(br);
+  //fill(255,88,0); 
+  sphere(35);
+  popMatrix();
+
+  // distracting cube
+  pushMatrix();
+  translate(width*3/4, height/2, -650);
+  rotateX(PI/4);
+  rotateZ(PI/3);
+  //fill(255,255,255,128);
+  box(90, 60, 150);
+  popMatrix();
+
+  // floor
+  pushMatrix();
+  translate(width/2, height, walldepth/2);
+  box(700,10,walldepth+15);
+  popMatrix();
+
+  // computer's paddle
+  pushMatrix();
+  translate(bx, by, walldepth);
+  //fill(255,55,22,192);
+  box(paddlesize,paddlesize,10);
+  popMatrix();
+
+  // gameboard divider ("net")
+  pushMatrix();
+  translate(width/2, height/2, walldepth/2);
+  //fill(99,55,22,32);
+  box(500,700,10);
+  popMatrix();
+
+  // distracting sphere
+  sphereDetail(10);
+  pushMatrix();
+  translate(width/4, height/3, -90);
+  rotateX(counter/100);
+  rotateY(counter/150);
+  //fill(22,55,99);
+  sphere(120);
+  popMatrix();
+
+  // my paddle (last so alpha works)
+  pushMatrix();
+  if(mousePressed) {
+    translate(bx, by, paddledepth);
+  } else {
+    translate(mouseX, mouseY, paddledepth);
+  }
+  //fill(255,255,0,32);
+  box(paddlesize,paddlesize,10);
+  popMatrix();
+}
