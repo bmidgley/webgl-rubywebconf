@@ -34,14 +34,7 @@ void draw() {
   by += dy;
   bz += dz;
 
-  if(bz > paddledepth) {
-    camera(mouseX,mouseY,500, bx, by, bz, 0, 1, 0);
-  } else if(mousePressed) {
-    //camera(width/2,height/2,500,width/2,height/2,-200, 0, 1, 0);
-    camera(width,height, walldepth/2, bx, by, bz, 0, 1, 0);
-  } else {
-    camera(mouseX,mouseY,500, width/2, height/2, -200, 0, 1, 0);
-  }
+  camera(mouseX,mouseY,500, width/2, height/2, -200, 0, 1, 0);
 
   boolean paddling = bx > mouseX - paddlesize/2 && bx < mouseX + paddlesize/2 && by > mouseY - paddlesize/2 && by < mouseY + paddlesize/2;
   // collisions

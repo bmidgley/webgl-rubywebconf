@@ -1,1 +1,3 @@
-start with index.html
+Launch ./pweb to run the web server (otherwise processing won't run)
+then open http://localhost:8000/index.html
+or go direct to the pong game http://localhost:8000/test2.html
